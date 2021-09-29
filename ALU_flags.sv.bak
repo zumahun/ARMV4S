@@ -1,0 +1,32 @@
+module ALU_flags(
+	input logic [31:0] a, b,
+	input logic [1:0] ALUControl,
+	output logic [3:0] ALUFlags,
+	output logic [31:0] n);
+
+	logic [31:0] condinvb;
+	logic [32:0] sum;
+
+	assign condinvb = ALUControl[0] ? ~b : b;
+	assign sum = a + condinvb + ALUControl[0];	
+
+	always_comb
+	casex (ALUControl[1:0])
+
+		2'b0?: n = sum; 
+		2'b10: n = a & b;
+		2'b11: n = a | b;
+	endcase
+
+	//Zero flag
+	assign ALUFlags[2] = &(~n);
+	
+	//Negative flag
+	assign ALUFlags[3] = n[31];
+
+	//Carry flag
+	assign ALUFlags[1] = ~ALUControl[1] & sum[32];
+
+	//oVerflow flag
+	assign ALUFlags[0] = ~(ALUControl[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & ~(ALUControl[1]);
+endmodule

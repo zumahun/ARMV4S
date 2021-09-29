@@ -1,0 +1,60 @@
+module testbench();
+	logic clk;
+	logic reset;
+	logic [31:0] WriteData, DataAdr;
+	logic MemWrite;
+
+	// instance device to be tested
+	top dut (clk, reset, WriteData, DataAdr, MemWrite);
+
+	logic [31:0] PC_check;
+	logic [31:0] rf_check[14:0];
+	logic [31:0] r_15;
+	logic [1:0] Immsrc;
+	logic [31:0] ReadData;
+
+	assign PC_check = testbench.dut.PC;
+	assign rf_check = testbench.dut.arm.dp.rf.rf;
+	assign r_15 = testbench.dut.arm.dp.PCPlus8;
+	assign Immsrc = testbench.dut.arm.ImmSrc;
+	assign ReadData = testbench.dut.ReadData;
+
+	//initialize test
+	initial
+	begin
+		reset <= 1; #22; reset <= 0;
+	end
+
+	// generate clock to sequence tests
+	always
+		begin
+			clk <= 1; #5; clk <= 0; #5;
+		end
+
+	//check that 7 gets written to address 0x64
+	// at end of program
+	always @(negedge clk)
+		begin
+			$display("----------------------------------------------------------------------------");
+			$display("PC = %h", PC_check);
+			$display("r[0] = %d, r[1] = %d, r[2] = %d, r[3] = %d, r[4] = %d", rf_check[0],rf_check[1],rf_check[2],rf_check[3],rf_check[4]);
+			$display("r[5] = %d, r[6] = %d, r[7] = %d, r[8] = %d, r[9] = %d", rf_check[5],rf_check[6],rf_check[7],rf_check[8],rf_check[9]);
+			$display("r[10] = %d, r[11] = %d, r[12] = %d, r[13] = %d,r[14] = %d", rf_check[10],rf_check[11],rf_check[12],rf_check[13],rf_check[14]);
+			$display("r[15] = %h", r_15);
+			
+			if (PC_check === 31'h44 | PC_check === 31'h40) begin
+				$display("Immsrc = %b", Immsrc);
+				$display("ReadData = %h", ReadData);
+			end
+
+			if (MemWrite) begin
+				if(DataAdr === 100 & WriteData === 7) begin
+					$display("Simulation succeeded");
+					$stop;
+				end else if (DataAdr !== 96) begin
+					$display("Simulation failed");
+					$stop;
+				end
+			end
+		end
+endmodule
